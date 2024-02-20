@@ -61,12 +61,33 @@ while True:
             elif x in ["Esc", "F12"]:
                 # Toggle RGB ON/OFF
                 rgb_controller.toggle()
+                print("RGB:", rgb_controller.is_on)
                 delay(100)
             elif x in ["F1", "F11"]:
-                # Toggle RGB ON/OFF
+                # Cycle Hues
                 rgb_controller.cycle_hue()
+                print("Hue:", rgb_controller.hue)
                 delay(100)
-
+            elif x in ["Ins", ]:
+                # Raise Saturation
+                rgb_controller.raise_saturation()
+                print("Saturation:", rgb_controller.saturation)
+                delay(100)
+            elif x in ["Backspace",]:
+                # Lower Saturation
+                rgb_controller.lower_saturation()
+                print("Saturation:", rgb_controller.saturation)
+                delay(100)
+            elif x in ["Del", ]:
+                # Raise brightness
+                rgb_controller.raise_brightness()
+                print("Brightness:", rgb_controller.brightness)
+                delay(100)
+            elif x in ["Space",]:
+                # Lower brightness
+                rgb_controller.lower_brightness()
+                print("Brightness:", rgb_controller.brightness)
+                delay(100)
     current_rgb_effect.process_state(keyboard)
 
     rgb_controller.show()

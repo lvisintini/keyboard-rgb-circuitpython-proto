@@ -3,6 +3,7 @@ import digitalio
 import neopixel
 from adafruit_itertools import adafruit_itertools as itertools
 from mock_firmware import NoK, NoL
+from utils import constrain
 
 
 external_vcc_cutoff_pin = digitalio.DigitalInOut(board.P0_13)
@@ -16,18 +17,18 @@ class RGBController:
     num_rows = None
     num_cols = None
 
-    hue_cycle = None
-
     _is_on = False
 
-    hue_step = 16
-    brightness_step = 0.1
-    saturation_step = 0.1
+    hue_step = 8
+    saturation_step = 16
+    brightness_step = 16
 
     # Settings
-    hue = 255
-    saturation = 1.0
-    brightness = 1.0
+    hue = 0
+    default_hue = 0
+    saturation = 255
+    default_saturation = 255
+    brightness = 255
 
     @property
     def is_on(self):
@@ -44,35 +45,30 @@ class RGBController:
 
     def __init__(
         self,
-        init_state, # Default/Initial status for RBG handling and effects (RGB_ON setting, though could it be toggled)
+        init_state,  # Default/Initial status for RBG handling and effects (RGB_ON setting, though could it be toggled)
         num_led,  # The number of leads in the LED "strip". (NUM_LEDS setting)
         rgb_pin,  # The pin used to control the LED "strip". (RGB_PIN setting)
         rgb_order,  # Depends on the type of RGB LED used, it releates to how the values provided to the LEDs are interpreted  (RGB_ORDER setting)
         keymap_macro,  # Used as a fallback to match the key matrix to LED strip, provided led_matrix and/or key_led_map_macro are not provkded (KEYMAP setting)
         led_matrix=None,  # A macro used to model how the LEDs (wired linearly) are presented as a matrix. I need not match KEYMAP but reduces configuration if it does. (LED_MATRIX setting)
         key_led_map_macro=None,  # If the number of keys in the does not match the number of LEDs in the strip or if LED_MATRIX and KEYMAP do not mesh very well, this macro wouyld be used to match individual keys to individual LEDs (setting KEY_LED_MAPPING)
-        num_keys=None, # if key_led_map_macro (KEY_LED_MAPPING setting) is provided, then we also need an indication of how many keys does the matrix have.
-        hue=None, # Default Hue for all effects. An integer in the 0-255 range. (RGB_HUE setting, though could it be adjusted)
-        saturation=None, # Default saturation for all effects. An integer in the 0-255 range. (RGB_SATURATION setting, though could it be adjusted)
+        num_keys=None,  # if key_led_map_macro (KEY_LED_MAPPING setting) is provided, then we also need an indication of how many keys does the matrix have.
+        hue=None,  # Default Hue for all effects. An integer in the 0-255 range. (RGB_HUE setting, though could it be adjusted)
+        saturation=None,  # Default saturation for all effects. An integer in the 0-255 range. (RGB_SATURATION setting, though could it be adjusted)
         brightness=None,  # Default brightness. A float value in the 0.0-1.0 range that determines the maximum level of brightness for the LEDs (RGB_BRIGHTNESS setting, though could it be adjusted)
-
     ):
         self.is_on = init_state
 
         self.num_led = num_led
 
-        # Do some setup to handle the cycling of hue when the appropriate keycode is changed.
-        # Similar stuff can be done for brightness and saturation
         self.hue = hue or self.hue
-        self.hue_cycle = list(range(0, 256 - self.hue_step, self.hue_step))
-        if self.hue not in self.hue_cycle:
-            self.hue_cycle.append(self.hue)
-            self.hue_cycle.sort()
-        self.hue_cycle = itertools.cycle(self.hue_cycle)
-        while next(self.hue_cycle) != self.hue: pass
-
         self.saturation = saturation or self.saturation
         self.brightness = brightness or self.brightness
+
+        # This are here in case the RGB effects need them.
+        self.default_hue = self.hue
+        self.default_saturation = self.saturation
+        self.default_brightness = self.brightness
 
         # If led_matrix is not provided, we should assume the LED wiring matches the logical sequence
         # this firmware uses for the mapping the keys.
@@ -86,7 +82,7 @@ class RGBController:
         # The keys in the matrix are numbered sequentially from zero and their numbers are computed with
         # by `row * len(column_pins) + column` (in layman terms "left to right, top to bottom")
         # If this same "order of appearance" is used also in the LED matrix then it is possible to automatically
-        # match key #1 with LED #1 (event if that LED is not the first one on strip) and similarly for the rest of
+        # match key #1 with LED #1 (event if that LED is not the first one on strip), key #2 with LED #2 and so on and so forth rest of
         # keys/LEDS
 
         # The assumption here is that the values returned by both macros have the same number of keys and LEDs
@@ -112,7 +108,6 @@ class RGBController:
                     [led for row in self.matrix for led in row if led != NoL],
                 )
             )
-
         self.num_rows = len(self.matrix)
         self.num_cols = len(
             self.matrix[0]
@@ -143,12 +138,27 @@ class RGBController:
         for led_number in range(self.num_led):
             self.leds[led_number] = value
 
-
     def toggle(self):
         self.is_on = not self.is_on
 
     def cycle_hue(self):
-        self.hue = next(self.hue_cycle)
+        if self.hue % self.hue_step == 0:
+            if (self.default_hue - (self.default_hue % self.hue_step)) == self.hue and self.hue != self.default_hue:
+                self.hue = self.default_hue
+            else:
+                self.hue = self.hue + self.hue_step
+        else:
+            self.hue = self.hue - (self.hue % self.hue_step) + self.hue_step
+        self.hue = self.hue % 256
 
+    def lower_saturation(self):
+        self.saturation = constrain(self.saturation - self.saturation_step, 0, 255)
 
+    def raise_saturation(self):
+        self.saturation = constrain(self.saturation + self.saturation_step, 0, 255);
 
+    def lower_brightness(self):
+        self.brightness = constrain(self.brightness - self.brightness_step, 0, 255)
+
+    def raise_brightness(self):
+        self.brightness = constrain(self.brightness + self.brightness_step, 0, 255);

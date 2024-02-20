@@ -27,7 +27,13 @@ class RGBEffect:
 
 class SolidRGBEffect(RGBEffect):
     def process_state(self, keyboard):
-        self.rgb_controller.fill(fancy.CHSV(self.rgb_controller.hue).pack())
+        self.rgb_controller.fill(
+            fancy.CHSV(
+                self.rgb_controller.hue,
+                self.rgb_controller.saturation,
+                self.rgb_controller.brightness
+            ).pack()
+        )
 
 
 class SolidRainbowRGBEffect(RGBEffect):
@@ -36,7 +42,7 @@ class SolidRainbowRGBEffect(RGBEffect):
     def process_state(self, keyboard):
         if millis() - self.last_change > 10:
             h = beat8(8)
-            color = fancy.CHSV(h)
+            color = fancy.CHSV(h,self.rgb_controller.saturation, self.rgb_controller.brightness)
             self.rgb_controller.leds.fill(color.pack())
             self.last_change = millis()
 
@@ -44,27 +50,27 @@ class SolidRainbowRGBEffect(RGBEffect):
 class ReactiveRGBEffect1(RGBEffect):
     def process_state(self, keyboard):
         fade_time = 1500
-        max_brightness = 1.0
+        max_brightness = self.rgb_controller.brightness / 255
 
         for key in keyboard.keys:
             since = key.get_millis_since(keyboard.current_millis)
             if key.is_pressed:
                 # Currently pressed
                 color = fancy.gamma_adjust(
-                    fancy.CRGB(255, 0, 0), brightness=max_brightness
+                    fancy.CHSV(self.rgb_controller.hue, self.rgb_controller.saturation), brightness=max_brightness
                 )
 
             elif since is None:
                 # Not pressed yet
-                color = fancy.CRGB(0, 0, 0)  # no brightness by default
+                color = fancy.CHSV(0, 0, 0)  # no brightness by default
 
             elif since >= fade_time:
                 # Pressed too long ago
-                color = fancy.CRGB(0, 0, 0)  # no brightness by default
+                color = fancy.CHSV(0, 0, 0)  # no brightness by default
 
             else:
                 brightness = max_brightness - (since / fade_time)
-                color = fancy.gamma_adjust(fancy.CRGB(255, 0, 0), brightness=brightness)
+                color = fancy.gamma_adjust(fancy.CHSV(self.rgb_controller.hue, self.rgb_controller.saturation), brightness=brightness)
 
             self.rgb_controller.set_led_value_by_key_number(key.key_number, color.pack())
 
@@ -97,6 +103,8 @@ class SnakeRGBEffect(RGBEffect):
         self.snake = [next(self.snake_path) for i in range(self.snake_length)]
 
     def process_state(self, keyboard):
+        max_brightness = self.rgb_controller.brightness / 255
+
         self.rgb_controller.leds.fill((0, 0, 0))
 
         if (keyboard.current_millis - self.last_change) > self.effect_speed:
@@ -106,27 +114,32 @@ class SnakeRGBEffect(RGBEffect):
 
         brightness = 0
         for snake_segment in self.snake:
-            brightness += 1 / self.snake_length
-            color = fancy.gamma_adjust(fancy.CRGB(255, 0, 0), brightness=brightness)
+            brightness += max_brightness / self.snake_length
+            color = fancy.gamma_adjust(
+                fancy.CHSV(self.rgb_controller.hue, self.rgb_controller.saturation),
+                brightness=brightness
+            )
             self.rgb_controller.set_led_value(snake_segment, color.pack())
 
 
 class BreathingRGBEffect(RGBEffect):
     pulse = 0.5
     start_brightness = 0.1
-    end_brightness = 1.0
 
     def process_state(self, keyboard):
+        end_brightness = self.rgb_controller.brightness / 255
+
         current_millis = millis()
         brightness_delta = (
             math.exp(math.sin(self.pulse * current_millis / 2000.0 * math.pi))
             - 0.36787944
-        ) * ((self.end_brightness - self.start_brightness) / 2.35040238)
+        ) * ((end_brightness - self.start_brightness) / 2.35040238)
 
         breathing_brightness = self.start_brightness + brightness_delta
 
         color = fancy.gamma_adjust(
-            fancy.CRGB(0, 255, 0), brightness=breathing_brightness
+            fancy.CHSV(self.rgb_controller.hue, self.rgb_controller.saturation),
+            brightness=breathing_brightness
         ).pack()
         self.rgb_controller.leds.fill(color)
 
@@ -155,6 +168,7 @@ class ScanColsRGBEffect(RGBEffect):
         self.last_change = millis()
 
     def process_state(self, keyboard):
+        max_brightness = self.rgb_controller.brightness / 255
         self.rgb_controller.leds.fill((0, 0, 0))
 
         if (keyboard.current_millis - self.last_change) > self.effect_speed:
@@ -164,8 +178,11 @@ class ScanColsRGBEffect(RGBEffect):
 
         brightness = 0
         for column in self.wave:
-            brightness += 1 / self.wave_length
-            color = fancy.gamma_adjust(fancy.CRGB(255, 0, 0), brightness=brightness).pack()
+            brightness += max_brightness / self.wave_length
+            color = fancy.gamma_adjust(
+                fancy.CHSV(self.rgb_controller.hue, self.rgb_controller.saturation),
+                brightness=brightness
+            ).pack()
             for led_number in column:
                 self.rgb_controller.set_led_value(led_number, color)
 
@@ -188,6 +205,7 @@ class ScanRowsRGBEffect(RGBEffect):
         self.last_change = millis()
 
     def process_state(self, keyboard):
+        max_brightness = self.rgb_controller.brightness / 255
         self.rgb_controller.leds.fill((0, 0, 0))
 
         if (keyboard.current_millis - self.last_change) > self.effect_speed:
@@ -197,8 +215,11 @@ class ScanRowsRGBEffect(RGBEffect):
 
         brightness = 0
         for row in self.wave:
-            brightness += 1 / self.wave_length
-            color = fancy.gamma_adjust(fancy.CRGB(255, 0, 0), brightness=brightness).pack()
+            brightness += max_brightness / self.wave_length
+            color = fancy.gamma_adjust(
+                fancy.CHSV(self.rgb_controller.hue, self.rgb_controller.saturation),
+                brightness=brightness
+            ).pack()
             for led_number in row:
                 self.rgb_controller.set_led_value(led_number, color)
 
@@ -208,10 +229,7 @@ EFFECTS = [
     SolidRainbowRGBEffect,
     ScanRowsRGBEffect,
     ScanColsRGBEffect,
-    SnakeRGBEffect,
     ReactiveRGBEffect1,
+    SnakeRGBEffect,
     BreathingRGBEffect,
 ]
-
-
-# Now convert everything to HUEs -> fancy.CHSV
