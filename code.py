@@ -26,23 +26,22 @@ rgb_controller = RGBController(
     NUM_LEDS,
     RGB_PIN,
     RGB_ORDER,
+    NUM_KEYS,
     KEYMAP,
     LED_MATRIX,
     KEY_LED_MAPPING,
-    NUM_KEYS,
     RGB_HUE,
     RGB_SATURATION,
     RGB_BRIGHTNESS
 )
 
-rgb_controller.fill((255, 0, 0))
-rgb_controller.show()
 delay(1000)
 
 RGB_MODES = itertools.cycle([effect_cls(rgb_controller) for effect_cls in EFFECTS])
 
 current_rgb_effect = next(RGB_MODES)
 current_rgb_effect.setup()
+print("Effect:", current_rgb_effect.__class__.__name__)
 
 
 while True:
@@ -57,6 +56,7 @@ while True:
                 current_rgb_effect.tear_down()
                 current_rgb_effect = next(RGB_MODES)
                 current_rgb_effect.setup()
+                print("Effect:", current_rgb_effect.__class__.__name__)
                 delay(100)
             elif x in ["Esc", "F12"]:
                 # Toggle RGB ON/OFF
