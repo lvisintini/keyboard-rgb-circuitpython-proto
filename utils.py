@@ -1,4 +1,5 @@
 import time
+from random import randrange
 
 
 def millis():
@@ -16,3 +17,6 @@ def beat8(beats_per_minute):
 
 def constrain(val, min_val, max_val):
     return min(max_val, max(min_val, val))
+
+def random(start, stop):
+    return randrange(start, stop)

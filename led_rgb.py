@@ -23,17 +23,17 @@ class RGBController:
     neopixel_strip = None
 
     hue_step = 8
-    saturation_step = 16
-    brightness_step = 16
+    saturation_step = 0.075
+    brightness_step = 0.075
 
     # Settings
     hue = 0
-    saturation = 255
-    brightness = 255
+    saturation = 1.0
+    brightness = 1.0
 
     default_hue = 0
-    default_saturation = 255
-    default_brightness = 255
+    default_saturation = 1.0
+    default_brightness = 1.0
 
     @property
     def is_on(self):
@@ -157,7 +157,7 @@ class RGBController:
     def fade_led(self, led_number, lower_by):
         self.strip[led_number].value = fancy.clamp_norm(self.strip[led_number].value - lower_by)
 
-    def set_brightness(self, led_number, brightness):
+    def set_led_brightness(self, led_number, brightness):
         self.strip[led_number].value = fancy.clamp_norm(brightness)
 
     def fill(self, color):
@@ -187,14 +187,14 @@ class RGBController:
         self.hue = self.hue % 256
 
     def lower_saturation(self):
-        self.saturation = constrain(self.saturation - self.saturation_step, 0, 255)
+        self.saturation = fancy.clamp_norm(self.saturation - self.saturation_step)
 
     def raise_saturation(self):
-        self.saturation = constrain(self.saturation + self.saturation_step, 0, 255);
+        self.saturation = fancy.clamp_norm(self.saturation + self.saturation_step);
 
     def lower_brightness(self):
-        self.brightness = constrain(self.brightness - self.brightness_step, 0, 255)
+        self.brightness = fancy.clamp_norm(self.brightness - self.brightness_step)
 
     def raise_brightness(self):
-        self.brightness = constrain(self.brightness + self.brightness_step, 0, 255);
+        self.brightness = fancy.clamp_norm(self.brightness + self.brightness_step);
 
