@@ -122,7 +122,7 @@ class SnakeRGBEffect(RGBEffect):
     snake_head = 0
     snake_path = []
     snake_length = 1000
-    effect_speed = 1
+    effect_speed = 50
 
     def setup(self):
         self.rgb_controller.fill(fancy.CHSV(0, 0, 0))
@@ -151,6 +151,8 @@ class SnakeRGBEffect(RGBEffect):
         if (keyboard.current_millis - self.last_change) > self.effect_speed:
             self.snake_head = (self.snake_head + 1) % self.rgb_controller.num_led
             self.rgb_controller.set_led_brightness(self.snake_path[self.snake_head], self.rgb_controller.brightness)
+
+            self.last_change = millis()
 
         self.last_pass = millis()
 
@@ -313,6 +315,63 @@ class RainbowRowsRGBEffect(RGBEffect):
                         )
                     )
 
+
+class RainbowSnakeRGBEffect(RGBEffect):
+    last_change = None
+    snake_head = 0
+    snake_path = []
+    snake_length = 1000
+    snake_delay = 50
+
+    # effect_speed controls how fast the colors change
+    rainbow_effect_speed = 8;
+
+    # rainbow_rate how agressively the colors transition from one led to the next.
+    # The direction of flow can be controlled with positive and negative values.
+    # Absolute value of 1 mean a full rainbow is displayed at any given time.
+    # Absolute values less than 1 would show only partial rainbows at any given time.
+    # Absolute values greater than display that many rainbows at any given time.
+    # 0 would should the all leads displaying the same color
+    rainbow_rate = -0.8
+
+    def setup(self):
+        self.rgb_controller.fill(fancy.CHSV(0, 0, 0))
+        self.last_change = millis()
+        self.last_pass = self.last_change
+        self.snake_path = []
+        self.snake_head = 0
+
+        for row_num in range(self.rgb_controller.num_rows):
+            cols_scan = list(range(self.rgb_controller.num_cols))
+            if row_num % 2 != 0:
+                cols_scan.reverse()
+            for col_num in cols_scan:
+                if self.rgb_controller.matrix[row_num][col_num] != NoL:
+                    self.snake_path.append(self.rgb_controller.matrix[row_num][col_num])
+
+    def process_state(self, keyboard):
+        for i in range(self.rgb_controller.num_led):
+            self.rgb_controller.strip[i].saturation = self.rgb_controller.saturation
+
+        self.rgb_controller.fade_all(
+            (self.rgb_controller.brightness/self.snake_length) * (millis() - self.last_pass)
+        )
+
+        if (keyboard.current_millis - self.last_change) > self.snake_delay:
+            self.snake_head = (self.snake_head + 1) % self.rgb_controller.num_led
+            self.rgb_controller.set_led_brightness(self.snake_path[self.snake_head], self.rgb_controller.brightness)
+            self.rgb_controller.set_led_color(
+                self.snake_path[self.snake_head],
+                fancy.CHSV(
+                    int(beat8(self.rainbow_effect_speed) + (self.rainbow_rate * 255 / self.rgb_controller.num_led) * self.snake_head),
+                    self.rgb_controller.saturation,
+                    self.rgb_controller.brightness
+                )
+            )
+            self.last_change = millis()
+        self.last_pass = millis()
+
+
 EFFECTS = [
     SolidRGBEffect,
     BreathingRGBEffect,
@@ -324,5 +383,6 @@ EFFECTS = [
     SolidRainbowRGBEffect,
     RainbowColsRGBEffect,
     RainbowRowsRGBEffect,
-    RainbowReactiveRGBEffect
+    RainbowReactiveRGBEffect,
+    RainbowSnakeRGBEffect
 ]

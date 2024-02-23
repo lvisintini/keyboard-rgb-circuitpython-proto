@@ -63,27 +63,27 @@ while True:
                 rgb_controller.toggle()
                 print("RGB:", rgb_controller.is_on)
                 delay(100)
-            elif x in ["F1", "F11"]:
+            elif x in ["MUTE", "Enter"]:
                 # Cycle Hues
                 rgb_controller.cycle_hue()
                 print("Hue:", rgb_controller.hue)
                 delay(100)
-            elif x in ["Ins", ]:
+            elif x in ["Ins", "HOME"]:
                 # Raise Saturation
                 rgb_controller.raise_saturation()
                 print("Saturation:", rgb_controller.saturation)
                 delay(100)
-            elif x in ["Backspace",]:
+            elif x in ["Backspace", "END"]:
                 # Lower Saturation
                 rgb_controller.lower_saturation()
                 print("Saturation:", rgb_controller.saturation)
                 delay(100)
-            elif x in ["Del", ]:
+            elif x in ["Del", "PGUP"]:
                 # Raise brightness
                 rgb_controller.raise_brightness()
                 print("Brightness:", rgb_controller.brightness)
                 delay(100)
-            elif x in ["Space",]:
+            elif x in ["Space", "PGDN"]:
                 # Lower brightness
                 rgb_controller.lower_brightness()
                 print("Brightness:", rgb_controller.brightness)
