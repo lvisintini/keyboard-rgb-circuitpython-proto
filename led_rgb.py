@@ -99,7 +99,6 @@ class RGBController:
 
         # If that assumption does not hold True, then a KEY_LED_MAPPING macro needs to be provided to account for
         # a more nuanced setup/wiring.
-
         if key_led_map_macro:
             params = list(range(num_keys))
             params.extend(range(self.num_led))
@@ -111,7 +110,7 @@ class RGBController:
                         key
                         for row in keymap_macro(*range(num_keys))
                         for key in row
-                        if key != Nok
+                        if key != NoK
                     ],
                     [led for row in self.matrix for led in row if led != NoL],
                 )

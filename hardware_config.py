@@ -38,6 +38,8 @@ RGB_SATURATION = 1.0
 RGB_BRIGHTNESS = 1.0
 RGB_ON = True
 
+KEY_LED_MAPPING = None
+
 if LAYOUT == LAYOUTS.LEFT:
 
     def KEYMAP(
@@ -69,8 +71,6 @@ if LAYOUT == LAYOUTS.LEFT:
         "PGDN", "END", "HOME", "PGUP", "MUTE",
     ]
 
-    NUM_LEDS = 39
-
     # If not provided, we use KEYMAP instead, which assumes that LEDs are wired in the same logical sequence as the keys
     def LED_MATRIX(
             l00, l01, l02, l03, l04, l05,
@@ -81,17 +81,70 @@ if LAYOUT == LAYOUTS.LEFT:
             l30, l31, l32, l33,
             l34, l35, l36, l37, l38):
         return [
-            [l00,   l01,   l02,   l03,   l04,   l05,   NoL],
-            [l11,   l10,   l09,   l08,   l07,   l06,   NoL],
-            [l12,   l13,   l14,   l15,   l16,   l17,   NoL],
-            [l23,   l22,   l21,   l20,   l19,   l18,   NoL],
-            [l24,   l25,   l26,   l27,   l28,   l29,   NoL],
-            [NoL,   NoL,   l33,   l32,   l31,   l30,   NoL],
-            [l38,   l37,   l36,   l35,   l34,   NoL,   NoL],
+            [NoL,   NoL,   l00,   l01,   l02,   l03,   l04,   l05],
+            [NoL,   NoL,   l11,   l10,   l09,   l08,   l07,   l06],
+            [NoL,   NoL,   l12,   l13,   l14,   l15,   l16,   l17],
+            [NoL,   NoL,   l23,   l22,   l21,   l20,   l19,   l18],
+            [NoL,   NoL,   l24,   l25,   l26,   l27,   l28,   l29],
+            [l36,   l35,   l34,   NoL,   l33,   l32,   l31,   l30],
+            [l37,   l38,   NoL,   NoL,   NoL,   NoL,   NoL,   NoL],
         ]
-    KEY_LED_MAPPING = None
-    NUM_KEYS = len(LAYER1) # 39
 
+    def KEY_LED_MAPPING(
+            k00, k01, k02, k03, k04, k05,
+            k10, k11, k12, k13, k14, k15,
+            k20, k21, k22, k23, k24, k25,
+            k30, k31, k32, k33, k34, k35,
+            k40, k41, k42, k43, k44, k45,
+            k52, k53, k54, k55,
+            k60, k61, k62, k63, k64,
+            l00, l01, l02, l03, l04, l05, l06,
+            l07, l08, l09, l10, l11, l12, l13,
+            l14, l15, l16, l17, l18, l19, l20,
+            l21, l22, l23, l24, l25, l26, l27,
+            l28, l29, l30, l31, l32, l33, l34,
+            l35, l36, l37, l38):
+        return [
+            (k00, l00),
+            (k01, l01),
+            (k02, l02),
+            (k03, l03),
+            (k04, l04),
+            (k05, l05),
+            (k10, l11),
+            (k11, l10),
+            (k12, l09),
+            (k13, l08),
+            (k14, l07),
+            (k15, l06),
+            (k20, l12),
+            (k21, l13),
+            (k22, l14),
+            (k23, l15),
+            (k24, l16),
+            (k25, l17),
+            (k30, l23),
+            (k31, l22),
+            (k32, l21),
+            (k33, l20),
+            (k34, l19),
+            (k35, l18),
+            (k40, l24),
+            (k41, l25),
+            (k42, l26),
+            (k43, l27),
+            (k44, l28),
+            (k45, l29),
+            (k52, l30),
+            (k53, l31),
+            (k54, l32),
+            (k55, l33),
+            (k60, l38),
+            (k61, l37),
+            (k62, l36),
+            (k63, l35),
+            (k64, l34),
+        ]
 
 else:
 
@@ -123,8 +176,6 @@ else:
         "Enter", "Del", "Ins", "Backspace", "Space",
     ]
 
-    NUM_LEDS = 45
-
     def LED_MATRIX(
             l00, l01, l02, l03, l04, l05, l06,
             l07, l08, l09, l10, l11, l12, l13,
@@ -142,11 +193,6 @@ else:
             [l42,   l41,   l40,   NoL,   l39,   l38,   l37,   l36,  l35],
             [l43,   l44,   NoL,   NoL,   NoL,   NoL,   NoL,   NoL,  NoL],
         ]
-
-    # If the number of LEDs does not match the number of keys, then an additional macro needs to be provided to match
-    # the keys to the LED
-    KEY_LED_MAPPING = None
-    NUM_KEYS = len(LAYER1) # 45
 
     def KEY_LED_MAPPING(
             k00, k01, k02, k03, k04, k05, k06,
@@ -210,3 +256,6 @@ else:
             (k63, l43),
             (k64, l44),
         ]
+
+NUM_LEDS = len(LAYER1) # 45 for RIGHT, 39 for LEFT
+NUM_KEYS = len(LAYER1) # 45 for RIGHT, 39 for LEFT
