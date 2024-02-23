@@ -142,12 +142,12 @@ class RGBController:
             pixel_order=rgb_order,
         )
 
-    def set_led_value_by_key_number(self, key_number, color):
+    def set_led_color_by_key_number(self, key_number, color):
         led_number = self.key_led_mapping[key_number]
         if led_number is not NoL:
             self.strip[led_number] = color
 
-    def set_led_value(self, led_number, color):
+    def set_led_color(self, led_number, color):
         self.strip[led_number] = color
 
     def fade_all(self, lower_by):

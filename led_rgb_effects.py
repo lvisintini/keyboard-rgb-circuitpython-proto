@@ -55,7 +55,7 @@ class StarsRGBEffect(RGBEffect):
             self.last_change = millis()
 
         for i in range(self.rgb_controller.num_led):
-                self.rgb_controller.set_led_value(i, self.rgb_controller.strip[i])
+                self.rgb_controller.set_led_color(i, self.rgb_controller.strip[i])
 
 
 
@@ -70,34 +70,51 @@ class SolidRainbowRGBEffect(RGBEffect):
             self.last_change = millis()
 
 
-class ReactiveRGBEffect1(RGBEffect):
+class ReactiveRGBEffect(RGBEffect):
+    fade_time = 1000
+
+    def setup(self):
+        self.last_pass = millis()
+
     def process_state(self, keyboard):
-        fade_time = 1500
-        max_brightness = self.rgb_controller.brightness
-
+        self.rgb_controller.fade_all(
+            (self.rgb_controller.brightness/self.fade_time) * (millis() - self.last_pass)
+        )
         for key in keyboard.keys:
-            since = key.get_millis_since(keyboard.current_millis)
             if key.is_pressed:
-                # Currently pressed
-                color = fancy.CHSV(
-                    self.rgb_controller.hue,
-                    self.rgb_controller.saturation,
-                    self.rgb_controller.brightness
+                self.rgb_controller.set_led_color_by_key_number(
+                    key.key_number,
+                    fancy.CHSV(
+                        self.rgb_controller.hue,
+                        self.rgb_controller.saturation,
+                        self.rgb_controller.brightness
+                    )
                 )
+        self.last_pass = millis()
 
-            elif since is None:
-                # Not pressed yet
-                color = fancy.CHSV(0, 0, 0)  # no brightness by default
 
-            elif since >= fade_time:
-                # Pressed too long ago
-                color = fancy.CHSV(0, 0, 0)  # no brightness by default
+class RainbowReactiveRGBEffect(RGBEffect):
+    fade_time = 1000
+    rainbow_effect_speed = 32;
 
-            else:
-                brightness = max_brightness - (since / fade_time)
-                color = fancy.CHSV(self.rgb_controller.hue, self.rgb_controller.saturation, brightness)
+    def setup(self):
+        self.last_pass = millis()
 
-            self.rgb_controller.set_led_value_by_key_number(key.key_number, color)
+    def process_state(self, keyboard):
+        self.rgb_controller.fade_all(
+            (self.rgb_controller.brightness/self.fade_time) * (millis() - self.last_pass)
+        )
+        for key in keyboard.keys:
+            if key.is_pressed:
+                self.rgb_controller.set_led_color_by_key_number(
+                    key.key_number,
+                    fancy.CHSV(
+                        beat8(self.rainbow_effect_speed),
+                        self.rgb_controller.saturation,
+                        self.rgb_controller.brightness
+                    )
+                )
+        self.last_pass = millis()
 
 
 class SnakeRGBEffect(RGBEffect):
@@ -201,45 +218,6 @@ class ScanColsRGBEffect(RGBEffect):
         self.last_pass = millis()
 
 
-class RainbowColsRGBEffect(RGBEffect):
-    last_change = None
-    effect_speed = 150
-    wave_length = 9
-    columns = None
-    wave = None
-
-    def setup(self):
-        columns = []
-        for col_num in range(self.rgb_controller.num_cols):
-            column = []
-            for row_num in range(self.rgb_controller.num_rows):
-                led_number = self.rgb_controller.matrix[row_num][col_num]
-                if led_number != NoL:
-                    column.append(led_number)
-
-            columns.append(column)
-
-        self.columns = itertools.cycle(columns)
-        self.wave = [next(self.columns) for i in range(self.wave_length)]
-
-        self.last_change = millis()
-
-    def process_state(self, keyboard):
-
-        self.rgb_controller.fill(fancy.CHSV(0, 0, 0))
-
-        if (keyboard.current_millis - self.last_change) > self.effect_speed:
-            self.wave = self.wave[1:]
-            self.wave.append(next(self.columns))
-            self.last_change = millis()
-
-        for column in self.wave:
-            color = fancy.CHSV(beat8(64), self.rgb_controller.saturation, self.rgb_controller.brightness)
-
-            for led_number in column:
-                self.rgb_controller.set_led_value(led_number, color)
-
-
 class ScanRowsRGBEffect(RGBEffect):
     last_change = None
     last_pass = None
@@ -281,60 +259,70 @@ class ScanRowsRGBEffect(RGBEffect):
         self.last_pass = millis()
 
 
+class RainbowColsRGBEffect(RGBEffect):
+    # effect_speed controls how fast the colors change
+    rainbow_effect_speed = 32;
 
-
-class SnakeRGBEffect2(RGBEffect):
-    last_change = None
-    snake = None
-    snake_path = None
-    snake_length = 6
-    effect_speed = 100
-
-    def setup(self):
-        self.last_change = millis()
-        snake_path = []
-
-        for row_num in range(self.rgb_controller.num_rows):
-            cols_scan = list(range(self.rgb_controller.num_cols))
-            if row_num % 2 != 0:
-                cols_scan.reverse()
-            for col_num in cols_scan:
-                if self.rgb_controller.matrix[row_num][col_num] != NoL:
-                    snake_path.append(self.rgb_controller.matrix[row_num][col_num])
-
-        self.snake_path = itertools.cycle(snake_path)
-        self.snake = [next(self.snake_path) for i in range(self.snake_length)]
+    # rainbow_rate how agressively the colors transition from one led to the next.
+    # The direction of flow can be controlled with positive and negative values.
+    # Absolute value of 1 mean a full rainbow is displayed at any given time.
+    # Absolute values less than 1 would show only partial rainbows at any given time.
+    # Absolute values greater than display that many rainbows at any given time.
+    # 0 would should the all leads displaying the same color
+    rainbow_rate = -0.5
 
     def process_state(self, keyboard):
-        max_brightness = self.rgb_controller.brightness
+        rainbow_hue = beat8(self.rainbow_effect_speed);
 
-        self.rgb_controller.fill(fancy.CHSV(0, 0, 0))
+        for i in range(self.rgb_controller.num_rows):
+            for j in range(self.rgb_controller.num_cols):
+                if self.rgb_controller.matrix[i][j] != NoL:
+                    self.rgb_controller.set_led_color(
+                        self.rgb_controller.matrix[i][j],
+                        fancy.CHSV(
+                            int(rainbow_hue + (self.rainbow_rate * 255 / self.rgb_controller.num_cols) * j),
+                            self.rgb_controller.saturation,
+                            self.rgb_controller.brightness
+                        )
+                    )
 
-        if (keyboard.current_millis - self.last_change) > self.effect_speed:
-            self.snake = self.snake[1:]
-            self.snake.append(next(self.snake_path))
-            self.last_change = millis()
 
-        brightness = 0
-        for snake_segment in self.snake:
-            brightness += max_brightness / self.snake_length
-            color = fancy.CHSV(
-                self.rgb_controller.hue,
-                self.rgb_controller.saturation,
-                brightness
-            )
-            self.rgb_controller.set_led_value(snake_segment, color)
+class RainbowRowsRGBEffect(RGBEffect):
+    # effect_speed controls how fast the colors change
+    rainbow_effect_speed = 32;
+
+    # rainbow_rate how agressively the colors transition from one led to the next.
+    # The direction of flow can be controlled with positive and negative values.
+    # Absolute value of 1 mean a full rainbow is displayed at any given time.
+    # Absolute values less than 1 would show only partial rainbows at any given time.
+    # Absolute values greater than display that many rainbows at any given time.
+    # 0 would should the all leads displaying the same color
+    rainbow_rate = -0.5
+
+    def process_state(self, keyboard):
+        rainbow_hue = beat8(self.rainbow_effect_speed);
+        for i in range(self.rgb_controller.num_cols):
+            for j in range(self.rgb_controller.num_rows):
+                if self.rgb_controller.matrix[j][i] != NoL:
+                    self.rgb_controller.set_led_color(
+                        self.rgb_controller.matrix[j][i],
+                        fancy.CHSV(
+                            int(rainbow_hue + (self.rainbow_rate * 255 / self.rgb_controller.num_rows) * j),
+                            self.rgb_controller.saturation,
+                            self.rgb_controller.brightness
+                        )
+                    )
 
 EFFECTS = [
-    SnakeRGBEffect,
-    SnakeRGBEffect2,
     SolidRGBEffect,
     BreathingRGBEffect,
-    ReactiveRGBEffect1,
+    ReactiveRGBEffect,
     StarsRGBEffect,
     SnakeRGBEffect,
     ScanColsRGBEffect,
     ScanRowsRGBEffect,
     SolidRainbowRGBEffect,
     RainbowColsRGBEffect,
+    RainbowRowsRGBEffect,
+    RainbowReactiveRGBEffect
 ]
