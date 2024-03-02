@@ -372,10 +372,114 @@ class RainbowSnakeRGBEffect(RGBEffect):
         self.last_pass = millis()
 
 
+
+class ReactiveRippleRGBEffect(RGBEffect):
+    fade_time = 300
+    ripple_speed = 100
+    
+    def setup(self):
+        self.reverse_mapping = {}
+        for r in range(self.rgb_controller.num_rows):
+            for c in range(self.rgb_controller.num_cols):
+                self.reverse_mapping[self.rgb_controller.matrix[r][c]] = (r, c)
+        self.last_pass = millis()
+
+    def process_state(self, keyboard):
+        for i in range(self.rgb_controller.num_led):
+            self.rgb_controller.strip[i].hue = self.rgb_controller.hue / 255.0
+            self.rgb_controller.strip[i].saturation = self.rgb_controller.saturation
+        
+        self.rgb_controller.fade_all(
+            (self.rgb_controller.brightness/self.fade_time) * (millis() - self.last_pass)
+        )
+        for key in keyboard.keys:
+            since = key.get_millis_since(keyboard.current_millis)
+            led_number = self.rgb_controller.key_led_mapping[key.key_number]
+            row, col = self.reverse_mapping[led_number]
+            
+            if since is not None:
+                radius = since / self.ripple_speed
+                if radius <= math.sqrt((self.rgb_controller.num_cols)**2 + (self.rgb_controller.num_rows)**2):
+                    for r in range(math.floor(radius * math.sqrt(0.5)) + 1):
+                        d = math.floor(math.sqrt(radius * radius - r * r))
+                        points = [
+                            (row - d, col + r),
+                            (row + d, col + r),
+                            (row - d, col - r),
+                            (row + d, col - r),
+                            (row + r, col - d),
+                            (row + r, col + d),
+                            (row - r, col - d),
+                            (row - r, col + d)
+                        ]
+                        
+                        for x, y in points:
+                            if x in range(self.rgb_controller.num_rows) and y in range(self.rgb_controller.num_cols) and self.rgb_controller.matrix[x][y] != NoL:
+                                self.rgb_controller.set_led_brightness(
+                                    self.rgb_controller.matrix[x][y],
+                                    self.rgb_controller.brightness
+                                )
+
+        self.last_pass = millis()
+
+
+class RainbowReactiveRippleRGBEffect(RGBEffect):
+    fade_time = 300
+    ripple_speed = 100
+    rainbow_effect_speed = 32
+    
+    def setup(self):
+        self.reverse_mapping = {}
+        for r in range(self.rgb_controller.num_rows):
+            for c in range(self.rgb_controller.num_cols):
+                self.reverse_mapping[self.rgb_controller.matrix[r][c]] = (r, c)
+        self.last_pass = millis()
+
+    def process_state(self, keyboard):
+        for i in range(self.rgb_controller.num_led):
+            self.rgb_controller.strip[i].hue = beat8(self.rainbow_effect_speed) / 255.0
+            self.rgb_controller.strip[i].saturation = self.rgb_controller.saturation
+            
+
+        
+        self.rgb_controller.fade_all(
+            (self.rgb_controller.brightness/self.fade_time) * (millis() - self.last_pass)
+        )
+        for key in keyboard.keys:
+            since = key.get_millis_since(keyboard.current_millis)
+            led_number = self.rgb_controller.key_led_mapping[key.key_number]
+            row, col = self.reverse_mapping[led_number]
+            
+            if since is not None:
+                radius = since / self.ripple_speed
+                if radius <= math.sqrt((self.rgb_controller.num_cols)**2 + (self.rgb_controller.num_rows)**2):
+                    for r in range(math.floor(radius * math.sqrt(0.5)) + 1):
+                        d = math.floor(math.sqrt(radius * radius - r * r))
+                        points = [
+                            (row - d, col + r),
+                            (row + d, col + r),
+                            (row - d, col - r),
+                            (row + d, col - r),
+                            (row + r, col - d),
+                            (row + r, col + d),
+                            (row - r, col - d),
+                            (row - r, col + d)
+                        ]
+                        
+                        for x, y in points:
+                            if x in range(self.rgb_controller.num_rows) and y in range(self.rgb_controller.num_cols) and self.rgb_controller.matrix[x][y] != NoL:
+                                self.rgb_controller.set_led_brightness(
+                                    self.rgb_controller.matrix[x][y],
+                                    self.rgb_controller.brightness
+                                )
+
+        self.last_pass = millis()
+
 EFFECTS = [
     SolidRGBEffect,
     BreathingRGBEffect,
     ReactiveRGBEffect,
+    ReactiveRippleRGBEffect,
     StarsRGBEffect,
     SnakeRGBEffect,
     ScanColsRGBEffect,
@@ -384,5 +488,6 @@ EFFECTS = [
     RainbowColsRGBEffect,
     RainbowRowsRGBEffect,
     RainbowReactiveRGBEffect,
-    RainbowSnakeRGBEffect
+    RainbowSnakeRGBEffect,
+    RainbowReactiveRippleRGBEffect,
 ]
